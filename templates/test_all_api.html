@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тестирование API объявлений</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header h1 { margin-top: 0; color: #1a73e8; }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card h3 {
+            margin-top: 0;
+            color: #1a73e8;
+            border-bottom: 2px solid #e8f0fe;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px 5px 5px 0;
+        }
+        button:hover { background: #1557b0; }
+        button.delete-btn { background: #dc3545; }
+        button.delete-btn:hover { background: #c82333; }
+        button.success-btn { background: #28a745; }
+        button.success-btn:hover { background: #218838; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        input, textarea {
+            display: block;
+            width: 100%;
+            padding: 8px 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        input[type="file"] { padding: 8px; }
+        label {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        label input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        .flex-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .flex-row > div { flex: 1; min-width: 200px; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #dee2e6;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 10px 0 0 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success { color: #28a745; font-weight: bold; }
+        .error { color: #dc3545; font-weight: bold; }
+        .warning { color: #856404; font-weight: bold; }
+        .image-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .image-grid img {
+            max-width: 150px;
+            max-height: 150px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            object-fit: cover;
+        }
+        .auth-status {
+            padding: 12px 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .auth-status.logged-in {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .auth-status.logged-out {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .auth-status.checking {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+        .result-container { margin-top: 10px; }
+        .result-container .status-msg { font-weight: 500; margin-bottom: 5px; }
+        .status-badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-open { background: #d4edda; color: #155724; }
+        .status-closed { background: #f8d7da; color: #721c24; }
+        .image-preview { margin-top: 10px; }
+        .image-preview img {
+            max-width: 200px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .image-preview p { margin: 5px 0; font-size: 14px; color: #666; }
+        .text-muted { color: #6c757d; font-size: 13px; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 5px; margin: 5px 0; }
+        .btn-group button { margin: 0; }
+        .small-input { max-width: 150px; }
+        .mt-10 { margin-top: 10px; }
+        .d-flex { display: flex; }
+        .flex-wrap { flex-wrap: wrap; }
+        .gap-10 { gap: 10px; }
+        .align-center { align-items: center; }
+        .result-block { margin-top: 8px; }
+        .result-block .status-msg { margin-bottom: 8px; }
+        .inline-block { display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== HEADER ==================== -->
+    <div class="header">
+        <h1>🧪 Полное тестирование API объявлений</h1>
+        
+        <div id="authStatus" class="auth-status checking">
+            ⏳ Проверка авторизации...
+        </div>
+        
+        <div id="csrfStatus" style="margin-top: 10px;"></div>
+        
+        <p style="margin-top: 15px;">
+            <strong>⚠️ Важно:</strong> Вы должны быть 
+            <a href="/admin/" target="_blank" style="color: #1a73e8; font-weight: 600;">залогинены в админке</a>
+            для выполнения запросов, требующих авторизации.
+        </p>
+    </div>
+
+    <!-- ==================== 1. GET СПИСОК ==================== -->
+    <div class="card">
+        <h3>📋 1. GET /api/v1/trades/</h3>
+        <div class="d-flex flex-wrap gap-10 align-center">
+            <button onclick="getTrades()">Получить список</button>
+            <span class="text-muted">— только открытые объявления</span>
+        </div>
+        <div class="result-container" id="result1"></div>
+    </div>
+
+    <!-- ==================== 2. GET ДЕТАЛИ ==================== -->
+    <div class="card">
+        <h3>🔍 2. GET /api/v1/trades/{ID}/</h3>
+        <div class="flex-row">
+            <div>
+                <label style="font-weight: 600; margin-bottom: 3px;">ID объявления:</label>
+                <input type="number" id="detailId" placeholder="Введите ID" value="1">
+                <div class="btn-group">
+                    <button onclick="getTradeDetail()">Получить детали</button>
+                    <button onclick="showImages()" class="success-btn">📸 Показать картинки</button>
+                </div>
+            </div>
+        </div>
+        <div id="imageGallery" class="image-grid"></div>
+        <div class="result-container" id="result2"></div>
+    </div>
+
+    <!-- ==================== 3. POST СОЗДАНИЕ ==================== -->
+    <div class="card">
+        <h3>➕ 3. POST /api/v1/trades/</h3>
+        <div class="flex-row">
+            <div>
+                <input type="text" id="newTitle" placeholder="Заголовок" value="Тестовое объявление">
+                <textarea id="newText" placeholder="Текст объявления" rows="3">Создано через API-тест</textarea>
+                <label>
+                    <input type="checkbox" id="newStatus" checked> Открыто
+                </label>
+                <button onclick="createTrade()">Создать объявление</button>
+            </div>
+        </div>
+        <div class="result-container" id="result3"></div>
+    </div>
+
+    <!-- ==================== 4. PUT ОБНОВЛЕНИЕ ==================== -->
+    <div class="card">
+        <h3>✏️ 4. PUT /api/v1/trades/{ID}/</h3>
+        <div class="flex-row">
+            <div>
+                <label style="font-weight: 600; margin-bottom: 3px;">ID объявления:</label>
+                <input type="number" id="updateId" placeholder="ID" value="1" class="small-input">
+                <input type="text" id="updateTitle" placeholder="Новый заголовок" value="Обновлённое объявление">
+                <textarea id="updateText" placeholder="Новый текст" rows="2">Новое описание объявления</textarea>
+                <label>
+                    <input type="checkbox" id="updateStatus" checked> Открыто
+                </label>
+                <button onclick="updateTrade()">Обновить объявление</button>
+            </div>
+        </div>
+        <div class="result-container" id="result4"></div>
+    </div>
+
+    <!-- ==================== 5. POST ИЗОБРАЖЕНИЕ ==================== -->
+    <div class="card">
+        <h3>🖼️ 5. POST /api/v1/trades/{ID}/images/</h3>
+        <div class="flex-row">
+            <div>
+                <label style="font-weight: 600; margin-bottom: 3px;">ID объявления:</label>
+                <input type="number" id="imageTradeId" placeholder="ID объявления" value="1" class="small-input">
+                
+                <label style="font-weight: 600; margin-bottom: 3px;">Выберите изображение:</label>
+                <input type="file" id="imageFile" accept="image/*">
+                
+                <div id="imagePreview" class="image-preview"></div>
+                
+                <div class="btn-group">
+                    <button onclick="uploadImage()">📤 Загрузить изображение</button>
+                    <button onclick="createAndUploadTestImage()" class="success-btn">🧪 Создать тестовое</button>
+                </div>
+            </div>
+        </div>
+        <div class="result-container" id="result5"></div>
+    </div>
+
+    <!-- ==================== 6. DELETE ИЗОБРАЖЕНИЕ ==================== -->
+    <div class="card">
+        <h3>🗑️ 6. DELETE /api/v1/trades/{ID}/images/{IMAGE_ID}/</h3>
+        <div class="flex-row">
+            <div>
+                <label style="font-weight: 600; margin-bottom: 3px;">ID объявления:</label>
+                <input type="number" id="deleteTradeId" placeholder="ID объявления" value="1" class="small-input">
+                
+                <label style="font-weight: 600; margin-bottom: 3px;">ID изображения:</label>
+                <input type="number" id="deleteImageId" placeholder="ID изображения" value="1" class="small-input">
+                
+                <button class="delete-btn" onclick="deleteImage()">🗑️ Удалить изображение</button>
+                <p class="text-muted" style="margin-top: 5px;">⚠️ Внимание! Это действие необратимо!</p>
+            </div>
+        </div>
+        <div class="result-container" id="result6"></div>
+    </div>
+
+    <!-- ==================== СКРИПТЫ ==================== -->
+    <script>
+        // ============================================================
+        // 1. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        // ============================================================
+
+        function getCSRFToken() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'csrftoken') {
+                    return value;
+                }
+            }
+            return null;
+        }
+
+        function checkAuth() {
+            const statusDiv = document.getElementById('authStatus');
+            const token = getCSRFToken();
+            
+            if (token) {
+                statusDiv.className = 'auth-status logged-in';
+                statusDiv.innerHTML = '✅ Вы авторизованы! CSRF токен найден.';
+                document.getElementById('csrfStatus').innerHTML = 
+                    '<span class="success">✅ CSRF токен найден</span>';
+                return true;
+            } else {
+                statusDiv.className = 'auth-status logged-out';
+                statusDiv.innerHTML = `
+                    ❌ Вы НЕ авторизованы!
+                    <br>
+                    Пожалуйста, <a href="/admin/" target="_blank">войдите в админку</a> и обновите эту страницу.
+                `;
+                document.getElementById('csrfStatus').innerHTML = `
+                    <span class="error">❌ CSRF токен не найден</span>
+                    <br>
+                    <span class="text-muted">
+                        Пожалуйста, зайдите в <a href="/admin/" target="_blank">админку</a> и обновите эту страницу.
+                    </span>
+                `;
+                return false;
+            }
+        }
+
+        function showResult(containerId, data, isSuccess = true) {
+            const container = document.getElementById(containerId);
+            const status = isSuccess ? 
+                '<span class="success">✅ Успешно</span>' : 
+                '<span class="error">❌ Ошибка</span>';
+            container.innerHTML = `
+                <div class="result-block">
+                    <div class="status-msg">${status}</div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        function showError(containerId, error, statusCode) {
+            const container = document.getElementById(containerId);
+            let errorMessage = error;
+            if (typeof error === 'object' && error.error) {
+                errorMessage = error.error;
+            } else if (typeof error === 'object') {
+                errorMessage = JSON.stringify(error, null, 2);
+            } else if (typeof error === 'string') {
+                errorMessage = error;
+            }
+            container.innerHTML = `
+                <div class="result-block">
+                    <div class="status-msg"><span class="error">❌ Ошибка ${statusCode || ''}</span></div>
+                    <pre>${errorMessage}</pre>
+                </div>
+            `;
+        }
+
+        function showImagesInGallery(images) {
+            const gallery = document.getElementById('imageGallery');
+            gallery.innerHTML = '';
+            if (images && images.length > 0) {
+                images.forEach(img => {
+                    const imgElement = document.createElement('img');
+                    imgElement.src = img.image;
+                    imgElement.alt = `Image ${img.id}`;
+                    imgElement.title = `ID: ${img.id}`;
+                    gallery.appendChild(imgElement);
+                });
+            } else {
+                gallery.innerHTML = '<p class="text-muted">Нет изображений</p>';
+            }
+        }
+
+        // ============================================================
+        // 2. API ЗАПРОСЫ
+        // ============================================================
+
+        async function apiRequest(url, options = {}) {
+            if (!checkAuth()) {
+                throw new Error('Вы не авторизованы! Пожалуйста, войдите в админку.');
+            }
+
+            const defaultOptions = {
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            };
+
+            const mergedOptions = {
+                ...defaultOptions,
+                ...options,
+                headers: {
+                    ...defaultOptions.headers,
+                    ...(options.headers || {})
+                }
+            };
+
+            const response = await fetch(url, mergedOptions);
+            
+            // Проверяем, не вернулся ли HTML
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+                const text = await response.text();
+                if (text.includes('login') || text.includes('admin/login')) {
+                    throw new Error('Вы не авторизованы! Пожалуйста, войдите в админку.');
+                }
+                throw new Error('Сервер вернул HTML вместо JSON. Возможно, вы не авторизованы.');
+            }
+
+            // Если статус 204 (No Content) - возвращаем успех
+            if (response.status === 204) {
+                return { success: true, message: 'Успешно удалено' };
+            }
+
+            // Пробуем распарсить JSON
+            try {
+                const data = await response.json();
+                if (!response.ok) {
+                    throw { data, status: response.status };
+                }
+                return data;
+            } catch (e) {
+                if (response.ok) {
+                    return { success: true };
+                }
+                throw { data: { error: 'Ошибка обработки ответа сервера' }, status: response.status };
+            }
+        }
+
+        // ============================================================
+        // 3. ЭНДПОИНТЫ
+        // ============================================================
+
+        // ---------- 3.1 GET СПИСОК ----------
+        async function getTrades() {
+            const containerId = 'result1';
+            document.getElementById(containerId).innerHTML = 
+                '<div class="result-block"><div class="status-msg">⏳ Загрузка...</div></div>';
+            
+            try {
+                const data = await apiRequest('/api/v1/trades/');
+                showResult(containerId, {
+                    count: data.length,
+                    items: data
+                });
+            } catch (error) {
+                if (error.data) {
+                    showError(containerId, error.data, error.status);
+                } else {
+                    showError(containerId, { error: error.message || 'Ошибка запроса' });
+                }
+            }
+        }
+
+        // ---------- 3.2 GET ДЕТАЛИ ----------
+        async function getTradeDetail() {
+            const id = document.getElementById('detailId').value;
+            if (!id) {
+                alert('Введите ID объявления!');
+                return;
+            }
+            
+            const containerId = 'result2';
+            document.getElementById(containerId).innerHTML = 
+                '<div class="result-block"><div class="status-msg">⏳ Загрузка...</div></div>';
+            document.getElementById('imageGallery').innerHTML = '';
+            
+            try {
+                const data = await apiRequest(`/api/v1/trades/${id}/`);
+                
+                const statusBadge = data.status ? 
+                    '<span class="status-badge status-open">Открыто</span>' :
+                    '<span class="status-badge status-closed">Закрыто</span>';
+                
+                const container = document.getElementById(containerId);
+                container.innerHTML = `
+                    <div class="result-block">
+                        <div class="status-msg"><span class="success">✅ Успешно</span></div>
+                        <div style="margin: 8px 0;">
+                            <strong>${data.title}</strong> ${statusBadge}
+                            <br>
+                            <span class="text-muted">Автор: ${data.author} | ID: ${data.id}</span>
+                            <br>
+                            <span class="text-muted">Создано: ${data.created}</span>
+                            <br>
+                            <span class="text-muted">Обновлено: ${data.updated}</span>
+                            <br>
+                            <span class="text-muted">Картинок: ${data.images?.length || 0}</span>
+                        </div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+                if (data.images && data.images.length > 0) {
+                    showImagesInGallery(data.images);
+                }
+            } catch (error) {
+                if (error.data) {
+                    showError(containerId, error.data, error.status);
+                } else {
+                    showError(containerId, { error: error.message || 'Ошибка запроса' });
+                }
+            }
+        }
+
+        function showImages() {
+            getTradeDetail();
+        }
+
+        // ---------- 3.3 POST СОЗДАНИЕ ----------
+        async function createTrade() {
+            const title = document.getElementById('newTitle').value;
+            const text = document.getElementById('newText').value;
+            const status = document.getElementById('newStatus').checked;
+            
+            if (!title || !text) {
+                alert('Заполните все поля!');
+                return;
+            }
+            
+            const containerId = 'result3';
+            document.getElementById(containerId).innerHTML = 
+                '<div class="result-block"><div class="status-msg">⏳ Создание...</div></div>';
+            
+            try {
+                const data = await apiRequest('/api/v1/trades/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ title, text, status })
+                });
+                showResult(containerId, data);
+                getTrades();
+            } catch (error) {
+                if (error.data) {
+                    showError(containerId, error.data, error.status);
+                } else {
+                    showError(containerId, { error: error.message || 'Ошибка запроса' });
+                }
+            }
+        }
+
+        // ---------- 3.4 PUT ОБНОВЛЕНИЕ ----------
+        async function updateTrade() {
+            const id = document.getElementById('updateId').value;
+            const title = document.getElementById('updateTitle').value;
+            const text = document.getElementById('updateText').value;
+            const status = document.getElementById('updateStatus').checked;
+            
+            if (!id) {
+                alert('Введите ID объявления!');
+                return;
+            }
+            
+            const data = {};
+            if (title) data.title = title;
+            if (text) data.text = text;
+            data.status = status;
+            
+            const containerId = 'result4';
+            document.getElementById(containerId).innerHTML = 
+                '<div class="result-block"><div class="status-msg">⏳ Обновление...</div></div>';
+            
+            try {
+                const result = await apiRequest(`/api/v1/trades/${id}/`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                showResult(containerId, result);
+                document.getElementById('detailId').value = id;
+                getTradeDetail();
+            } catch (error) {
+                if (error.data) {
+                    showError(containerId, error.data, error.status);
+                } else {
+                    showError(containerId, { error: error.message || 'Ошибка запроса' });
+                }
+            }
+        }
+
+        // ---------- 3.5 POST ИЗОБРАЖЕНИЕ ----------
+        async function uploadImage() {
+            const tradeId = document.getElementById('imageTradeId').value;
+            const fileInput = document.getElementById('imageFile');
+            const file = fileInput.files[0];
+            
+            if (!tradeId) {
+                alert('Введите ID объявления!');
+                return;
+            }
+            
+            if (!file) {
+                alert('Выберите файл изображения!');
+                return;
+            }
+            
+            const containerId = 'result5';
+            document.getElementById(containerId).innerHTML = 
+                '<div class="result-block"><div class="status-msg">⏳ Загрузка...</div></div>';
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const data = await apiRequest(`/api/v1/trades/${tradeId}/images/`, {
+                    method: 'POST',
+                    body: formData
+                });
+                showResult(containerId, data);
+                document.getElementById('detailId').value = tradeId;
+                setTimeout(() => getTradeDetail(), 500);
+            } catch (error) {
+                if (error.data) {
+                    showError(containerId, error.data, error.status);
+                } else {
+                    showError(containerId, { error: error.message || 'Ошибка запроса' });
+                }
+            }
+        }
+
+        // ---------- 3.6 СОЗДАНИЕ ТЕСТОВОГО ИЗОБРАЖЕНИЯ ----------
+        async function createAndUploadTestImage() {
+            const tradeId = document.getElementById('imageTradeId').value || 1;
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 400;
+            canvas.height = 300;
+            const ctx = canvas.getContext('2d');
+            
+            const gradient = ctx.createLinearGradient(0, 0, 400, 300);
+            gradient.addColorStop(0, '#FF6B6B');
+            gradient.addColorStop(0.5, '#4ECDC4');
+            gradient.addColorStop(1, '#45B7D1');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 400, 300);
+            
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 5;
+            ctx.strokeRect(20, 20, 360, 260);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 48px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🧪 Тест', 200, 130);
+            
+            ctx.font = '24px Arial';
+            const now = new Date();
+            ctx.fillText(`Создано: ${now.toLocaleTimeString()}`, 200, 190);
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.font = '16px Arial';
+            ctx.fillText(`ID: ${tradeId}`, 200, 230);
+            
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            const file = new File([blob], `test_image_${Date.now()}.png`, { type: 'image/png' });
+            
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            document.getElementById('imageFile').files = dataTransfer.files;
+            
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = `
+                <p><strong>Создано тестовое изображение:</strong></p>
+                <img src="${URL.createObjectURL(file)}" alt="Test image">
+            `;
+            
+            await uploadImage();
+        }
+
+        // ---------- 3.7 DELETE ИЗОБРАЖЕНИЕ ----------
+        async function deleteImage() {
+            const tradeId = document.getElementById('deleteTradeId').value;
+            const imageId = document.getElementById('deleteImageId').value;
+            
+            if (!tradeId || !imageId) {
+                alert('Заполните все поля!');
+                return;
+            }
+            
+            if (!confirm(`Вы уверены, что хотите удалить изображение #${imageId} из объявления #${tradeId}?`)) {
+                return;
+            }
+            
+            const containerId = 'result6';
+            document.getElementById(containerId).innerHTML = 
+                '<div class="result-block"><div class="status-msg">⏳ Удаление...</div></div>';
+            
+            try {
+                const result = await apiRequest(`/api/v1/trades/${tradeId}/images/${imageId}/`, {
+                    method: 'DELETE'
+                });
+                
+                const container = document.getElementById(containerId);
+                container.innerHTML = `
+                    <div class="result-block">
+                        <div class="status-msg"><span class="success">✅ Изображение успешно удалено!</span></div>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </div>
+                `;
+                
+                document.getElementById('detailId').value = tradeId;
+                setTimeout(() => getTradeDetail(), 500);
+                
+            } catch (error) {
+                if (error.data) {
+                    showError(containerId, error.data, error.status);
+                } else {
+                    showError(containerId, { error: error.message || 'Ошибка запроса' });
+                }
+            }
+        }
+
+        // ============================================================
+        // 4. ЗАГРУЗКА СТРАНИЦЫ
+        // ============================================================
+
+        window.onload = function() {
+            checkAuth();
+            
+            document.getElementById('imageFile').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                const preview = document.getElementById('imagePreview');
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        preview.innerHTML = `
+                            <p><strong>Выбран файл:</strong> ${file.name} (${(file.size / 1024).toFixed(2)} KB)</p>
+                            <img src="${event.target.result}" alt="Preview">
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.innerHTML = '';
+                }
+            });
+
+            setTimeout(() => {
+                if (checkAuth()) {
+                    getTrades();
+                }
+            }, 500);
+        };
+    </script>
+
+</body>
+</html>
