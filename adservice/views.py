@@ -138,8 +138,8 @@ def add_image(request, trade_id):
         
         data = {
             'id': image.id,
-            'created_at': image.created_at.isoformat(),
-            'updated_at': image.updated_at.isoformat(),
+            'created_at': image.created.isoformat(),
+            'updated_at': image.updated.isoformat(),
             'image': image.image.url,
             'author': image.author.id,
             'trade': image.trade.id,
