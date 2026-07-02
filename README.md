@@ -16,7 +16,7 @@
 
 ```bash
 https://github.com/weahem/adservice
-cd django-ads-api
+cd adservice
 ```
 
 Создать виртуальное окружение:
