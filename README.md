@@ -15,7 +15,7 @@
 Клонировать репозиторий:
 
 ```bash
-git clone https://github.com/your-username/django-ads-api.git
+https://github.com/weahem/adservice
 cd django-ads-api
 ```
 
