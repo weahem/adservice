@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_spectacular',
     'adservice',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -82,6 +83,10 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
 }
 
 SPECTACULAR_SETTINGS = {
@@ -89,6 +94,19 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API для сайта объявлений',
     'VERSION': '2.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'SWAGGER_UI_SETTINGS': {
+        'persistAuthorization': True,  # токен сохраняется после перезагрузки
+    },
+    'SECURITY': [
+        {
+            'Token': {
+                'type': 'apiKey',
+                'in': 'header',
+                'name': 'Authorization',
+                'description': 'Введите: Token <ваш_токен>'
+            }
+        }
+    ],
 }
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases

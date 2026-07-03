@@ -30,20 +30,8 @@ class TradeCreateUpdateSerializer(serializers.ModelSerializer):
         fields = ('title', 'text', 'status')
     
     def create(self, validated_data):
-        # Если пользователь авторизован — ставим его автором
-        request = self.context.get('request')
-        if request and hasattr(request, 'user') and request.user.is_authenticated:
-            validated_data['author'] = request.user
-        else:
-            # Если не авторизован — создаём анонимного автора (или можно вернуть ошибку)
-            # Для простоты — берём первого пользователя или создаём
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            anonymous_user, _ = User.objects.get_or_create(
-                username='anonymous',
-                defaults={'email': 'anonymous@example.com'}
-            )
-            validated_data['author'] = anonymous_user
+        # Автор берётся из контекста запроса (передаётся во вьюхе)
+        validated_data['author'] = self.context['request'].user
         return super().create(validated_data)
 
 
@@ -53,20 +41,5 @@ class ImageCreateSerializer(serializers.ModelSerializer):
         fields = ('image',)
     
     def create(self, validated_data):
-        trade_id = self.context['view'].kwargs.get('trade_pk')
-        validated_data['trade_id'] = trade_id
-        
-        # Автор — текущий пользователь или аноним
-        request = self.context.get('request')
-        if request and hasattr(request, 'user') and request.user.is_authenticated:
-            validated_data['author'] = request.user
-        else:
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            anonymous_user, _ = User.objects.get_or_create(
-                username='anonymous',
-                defaults={'email': 'anonymous@example.com'}
-            )
-            validated_data['author'] = anonymous_user
         
         return super().create(validated_data)
